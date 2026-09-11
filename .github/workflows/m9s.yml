@@ -31,21 +31,10 @@ jobs:
 
     - name: "Clone OpenWrt source code"
       run: |
-       df -hT $PWD
- 
-       git clone https://git.openwrt.org/openwrt/openwrt.git openwrt
-       git -C openwrt checkout 00ceb1ed1763f7479df6edf92ffada948f0e7d45
-
-       echo "=== OpenWrt commit ==="
-       git -C openwrt log -1 --oneline
-
-       echo "=== ath.mk relevant lines ==="
-       grep -n -E 'PKG_DRIVERS|ath12k|qcom-qmi-helpers|ATH10K_LEDS|KernelPackage/ath10k|KernelPackage/ath11k' \
-       openwrt/package/kernel/mac80211/ath.mk | head -80
-
-       echo "=== ath.mk around patch failure ==="
-       nl -ba openwrt/package/kernel/mac80211/ath.mk | sed -n '280,330p'
-       
+        df -hT $PWD
+        git clone https://git.openwrt.org/openwrt/openwrt.git openwrt
+        git -C openwrt checkout 3280f9e8f764e76871857a240a1ba12616ea87c8
+    
     - name: Load msm89xx target and packages
       run: |
         git apply --unsafe-paths enable_wcn36xx_mac80211.patch
