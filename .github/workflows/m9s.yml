@@ -35,32 +35,49 @@ jobs:
         git clone https://git.openwrt.org/openwrt/openwrt.git openwrt
         git -C openwrt checkout 3280f9e8f764e76871857a240a1ba12616ea87c8
     
-    - name: Load msm89xx target and packages
-      run: |
-        git apply --unsafe-paths enable_wcn36xx_mac80211.patch
-        mv msm89xx openwrt/target/linux/msm89xx
-        mv packages openwrt/package/uz801
-        if [ "${{ inputs.openwrt_version }}" == "openwrt-24.10" ]; then
-          sed -i '/^KERNEL_PATCHVER/c\KERNEL_PATCHVER:=6.6' openwrt/target/linux/msm89xx/Makefile
-        fi
+#    - name: Load msm89xx target and packages
+#      run: |
+#        git apply --unsafe-paths enable_wcn36xx_mac80211.patch
+#        mv msm89xx openwrt/target/linux/msm89xx
+#        mv packages openwrt/package/uz801
+#        if [ "${{ inputs.openwrt_version }}" == "openwrt-24.10" ]; then
+#          sed -i '/^KERNEL_PATCHVER/c\KERNEL_PATCHVER:=6.6' openwrt/target/linux/msm89xx/Makefile
+#        fi
 
     - name: Update and install feeds
       run: |
         cd openwrt
         rm -rf tmp
-    
+
         ./scripts/feeds update -a
-    
-        echo "=== Feed revisions ==="
-        for feed in packages luci routing telephony; do
+
+        # OpenWrt core is pinned to 2024-09-23.
+        # Pin all external feeds to commits from the same period.
+        FEED_DATE="2024-09-24 00:00:00"
+
+        for feed in packages luci routing telephony video; do
           if [ -d "feeds/$feed/.git" ]; then
-            echo "=== $feed ==="
-            git -C "feeds/$feed" log -1 --format='%H %ad %s' --date=iso
+            echo "========================================"
+            echo "Pinning feed: $feed"
+            echo "========================================"
+
+            commit="$(git -C "feeds/$feed" rev-list -1 --before="$FEED_DATE" HEAD)"
+
+            if [ -z "$commit" ]; then
+              echo "ERROR: no suitable commit found for feed $feed"
+              exit 1
+            fi
+
+            git -C "feeds/$feed" checkout --detach "$commit"
+
+            git -C "feeds/$feed" log -1 \
+              --format="Feed: %n  commit: %H%n  date:   %ad%n  subject: %s" \
+              --date=iso
           fi
         done
-    
+
         ./scripts/feeds install -a
-        
+
 #    - name: Update and install feeds
 #      run: |
 #        cd openwrt
