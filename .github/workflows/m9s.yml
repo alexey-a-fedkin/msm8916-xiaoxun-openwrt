@@ -48,8 +48,25 @@ jobs:
       run: |
         cd openwrt
         rm -rf tmp
+    
         ./scripts/feeds update -a
+    
+        echo "=== Feed revisions ==="
+        for feed in packages luci routing telephony; do
+          if [ -d "feeds/$feed/.git" ]; then
+            echo "=== $feed ==="
+            git -C "feeds/$feed" log -1 --format='%H %ad %s' --date=iso
+          fi
+        done
+    
         ./scripts/feeds install -a
+        
+#    - name: Update and install feeds
+#      run: |
+#        cd openwrt
+#        rm -rf tmp
+#        ./scripts/feeds update -a
+#        ./scripts/feeds install -a
 
     - name: "Load diffconfig"
       run: |
