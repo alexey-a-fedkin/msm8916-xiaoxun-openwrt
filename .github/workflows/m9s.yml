@@ -51,29 +51,35 @@ jobs:
 
         ./scripts/feeds update -a
 
-        # OpenWrt core is pinned to 2024-09-23.
-        # Pin all external feeds to commits from the same period.
         FEED_DATE="2024-09-24 00:00:00"
 
         for feed in packages luci routing telephony video; do
-          if [ -d "feeds/$feed/.git" ]; then
-            echo "========================================"
-            echo "Pinning feed: $feed"
-            echo "========================================"
-
-            commit="$(git -C "feeds/$feed" rev-list -1 --before="$FEED_DATE" HEAD)"
-
-            if [ -z "$commit" ]; then
-              echo "ERROR: no suitable commit found for feed $feed"
-              exit 1
-            fi
-
-            git -C "feeds/$feed" checkout --detach "$commit"
-
-            git -C "feeds/$feed" log -1 \
-              --format="Feed: %n  commit: %H%n  date:   %ad%n  subject: %s" \
-              --date=iso
+          if [ ! -d "feeds/$feed/.git" ]; then
+            echo "ERROR: feed $feed does not have a git repository"
+            exit 1
           fi
+
+          echo "========================================"
+          echo "Feed: $feed"
+          echo "Fetching full history..."
+          echo "========================================"
+
+          git -C "feeds/$feed" fetch --unshallow
+
+          commit="$(git -C "feeds/$feed" rev-list -1 --before="$FEED_DATE" HEAD)"
+
+          if [ -z "$commit" ]; then
+            echo "ERROR: no commit before $FEED_DATE found for $feed"
+            exit 1
+          fi
+
+          git -C "feeds/$feed" checkout --detach "$commit"
+
+          git -C "feeds/$feed" log -1 \
+            --format="commit %H%nDate: %ad%nSubject: %s" \
+            --date=iso
+
+          echo
         done
 
         ./scripts/feeds install -a
