@@ -53,7 +53,7 @@ jobs:
 
         FEED_DATE="2024-09-24 00:00:00"
 
-        for feed in packages luci routing telephony video; do
+        for feed in packages luci routing telephony; do
           if [ ! -d "feeds/$feed/.git" ]; then
             echo "ERROR: feed $feed does not have a git repository"
             exit 1
