@@ -95,11 +95,38 @@ jobs:
       run: |
         [ -f diffconfig_m9s ] && mv diffconfig_m9s openwrt/.config
 
+    - name: Debug LuCI architecture
+      run: |
+        cd openwrt
+
+        echo "===== TARGET ARCH ====="
+        grep -E 'CONFIG_(TARGET_ARCH|TARGET_ARCH_PACKAGES|ARCH_PACKAGES|LIBC)' .config || true
+
+        echo
+        echo "===== LUCI MAKEFILE ====="
+        sed -n '1,180p' feeds/luci/collections/luci/Makefile
+
+        echo
+        echo "===== LUCI PACKAGE MAKEFILE ====="
+        find feeds/luci -path '*/luci/Makefile' -print -exec sed -n '1,160p' {} \;
+
+        echo
+        echo "===== PACKAGE METADATA ====="
+        find tmp -type f \( -name '*Packages*' -o -name '*.ipk' \) 2>/dev/null | head -100 || true
+
+
     - name: Download package
       id: package
       run: |
         cd openwrt
         make defconfig
+        
+        echo "===== FINAL CONFIG ====="
+        grep -E '^CONFIG_(TARGET_ARCH|TARGET_ARCH_PACKAGES|TARGET_SUFFIX|LIBC|PACKAGE_luci)' .config || true
+
+        echo "===== TARGET ====="
+        grep '^CONFIG_TARGET_' .config | grep '=y' || true
+        
         make download -j8
         find dl -size -1024c -exec ls -l {} \; || true
         find dl -size -1024c -exec rm -f {} \; || true
